@@ -22,7 +22,6 @@ function injectPdfButton() {
     buttonContainer.innerHTML = `
     <a href="/generate-pdf" id="pdf-button"
       class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full shadow-lg transition-colors duration-200 no-underline flex items-center gap-2">
-      <i class="ti ti-download w-5 h-5"></i>
       <span>Download CV</span>
     </a>
   `;

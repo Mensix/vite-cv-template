@@ -48,18 +48,16 @@ function pdfGeneratorPlugin(): Plugin {
                   overflow: hidden;
                 }
                 @media print {
-                  #pdf-button { display: none !important; } /* Hide button in PDF */
-                  #page1 {
-                    page-break-after: always;
-                    overflow: hidden !important; 
-                  }
-                  #page2 {
+                  #pdf-button { display: none !important; }
+
+                  .page-a4 + .page-a4 {
                     page-break-before: always;
-                    overflow: hidden !important;
                   }
+
                   .page-a4 {
                       height: 297mm !important;
                       width: 210mm !important;
+                      overflow: hidden !important;
                       box-shadow: none !important;
                       margin: 0 !important;
                       padding: 0mm !important;
