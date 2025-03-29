@@ -60,7 +60,6 @@ function pdfGeneratorPlugin(): Plugin {
                       overflow: hidden !important;
                       box-shadow: none !important;
                       margin: 0 !important;
-                      padding: 0mm !important;
                       box-sizing: border-box !important;
                   }
                   body {
