@@ -1,8 +1,9 @@
-import { defineConfig, Plugin, ViteDevServer } from 'vite'
+import type { ServerResponse } from 'node:http'
+import type { Browser } from 'playwright'
+import type { Connect, Plugin, ViteDevServer } from 'vite'
 import tailwindcss from '@tailwindcss/vite'
-import { Browser, chromium } from 'playwright';
-import type { ServerResponse } from 'http';
-import type { Connect } from 'vite'
+import { chromium } from 'playwright'
+import { defineConfig } from 'vite'
 
 function pdfGeneratorPlugin(): Plugin {
   return {
@@ -10,35 +11,32 @@ function pdfGeneratorPlugin(): Plugin {
     configureServer(server: ViteDevServer) {
       server.middlewares.use(async (req: Connect.IncomingMessage, res: ServerResponse, next: Connect.NextFunction) => {
         if (req.url === '/generate-pdf') {
-          console.log('Received request for /generate-pdf');
-          let browser: Browser | undefined;
+          console.log('Received request for /generate-pdf')
+          let browser: Browser | undefined
           try {
-            const address = server.httpServer?.address();
-            let serverUrl = '';
+            const address = server.httpServer?.address()
+            let serverUrl = ''
             if (typeof address === 'object' && address !== null) {
-              const host = address.address === '::' || address.address === '0.0.0.0' ? 'localhost' : address.address;
-              serverUrl = `http://${host}:${address.port}`;
-              console.log(`Target URL for PDF generation: ${serverUrl}`);
-            } else {
-              throw new Error('Could not determine Vite server address.');
+              const host = address.address === '::' || address.address === '0.0.0.0' ? 'localhost' : address.address
+              serverUrl = `http://${host}:${address.port}`
+              console.log(`Target URL for PDF generation: ${serverUrl}`)
+            }
+            else {
+              throw new Error('Could not determine Vite server address.')
             }
 
-            console.log('Launching headless browser for PDF...');
-            browser = await chromium.launch();
-            const context = await browser.newContext();
-            const page = await context.newPage();
+            console.log('Launching headless browser for PDF...')
+            browser = await chromium.launch()
+            const context = await browser.newContext()
+            const page = await context.newPage()
 
-            console.log(`Navigating to ${serverUrl}...`);
-            await page.goto(serverUrl, { waitUntil: 'networkidle' }); 
+            console.log(`Navigating to ${serverUrl}...`)
+            await page.goto(serverUrl, { waitUntil: 'networkidle' })
 
-            console.log('Waiting for fonts to be ready...');
-            await page.evaluate(async () => {
-              await document.fonts.ready;
-            });
-            
-            await page.waitForTimeout(500); 
+            console.log('Waiting for fonts to be ready...')
+            await page.evaluate(async () => await document.fonts.ready)
 
-            console.log('Injecting page break styles for PDF...');
+            console.log('Injecting page break styles for PDF...')
             await page.addStyleTag({
               content: `
                 /* Base A4 page styles */
@@ -77,46 +75,48 @@ function pdfGeneratorPlugin(): Plugin {
                 body > div.page-a4 {
                    box-shadow: none !important; /* Hide shadow when generating PDF */
                 }
-              `
-            });
+              `,
+            })
 
-            console.log('Generating PDF buffer...');
+            console.log('Generating PDF buffer...')
             const pdfBuffer = await page.pdf({
               format: 'A4',
               printBackground: true,
               margin: { top: '0', right: '0', bottom: '0', left: '0' },
               displayHeaderFooter: false,
-            });
-            console.log('PDF buffer generated.');
+            })
+            console.log('PDF buffer generated.')
 
-            res.setHeader('Content-Type', 'application/pdf');
-            res.setHeader('Content-Disposition', 'attachment; filename="CV.pdf"');
-            res.setHeader('Content-Length', pdfBuffer.length);
+            res.setHeader('Content-Type', 'application/pdf')
+            res.setHeader('Content-Disposition', 'attachment; filename="CV.pdf"')
+            res.setHeader('Content-Length', pdfBuffer.length)
 
-            res.end(pdfBuffer);
-            console.log('PDF sent to client.');
-
-          } catch (error) {
-            console.error('Error generating PDF:', error);
-            res.statusCode = 500;
-            res.end('Internal Server Error: Could not generate PDF');
-          } finally {
+            res.end(pdfBuffer)
+            console.log('PDF sent to client.')
+          }
+          catch (error) {
+            console.error('Error generating PDF:', error)
+            res.statusCode = 500
+            res.end('Internal Server Error: Could not generate PDF')
+          }
+          finally {
             if (browser) {
-              await browser.close();
-              console.log('Playwright browser closed.');
+              await browser.close()
+              console.log('Playwright browser closed.')
             }
           }
-        } else {
-          next();
         }
-      });
-    }
-  };
+        else {
+          next()
+        }
+      })
+    },
+  }
 }
 
 export default defineConfig({
   plugins: [
     tailwindcss(),
-    pdfGeneratorPlugin()
+    pdfGeneratorPlugin(),
   ],
 })
